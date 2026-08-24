@@ -1,0 +1,43 @@
+name: terms-immutability
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: terms files are immutable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refuse modification, deletion or rename under terms/
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            git fetch --quiet origin "$BASE_REF"
+            range="origin/$BASE_REF...HEAD"
+          elif [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "Branch creation push; nothing to compare."
+            exit 0
+          else
+            range="$BEFORE_SHA..$GITHUB_SHA"
+          fi
+          violations=$(git diff --no-renames --diff-filter=MD --name-only "$range" -- terms/)
+          if [ -n "$violations" ]; then
+            echo "::error::Files published under terms/ are immutable: consent captures in health-hub reference them by URL. Publish a new file under a new name instead of changing or deleting an existing one (see README)."
+            echo "Offending files:"
+            echo "$violations"
+            exit 1
+          fi
+          echo "OK: no existing file under terms/ was modified or deleted."

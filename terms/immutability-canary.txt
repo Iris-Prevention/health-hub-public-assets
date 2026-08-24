@@ -1,0 +1,4 @@
+Fichier canari du garde-fou d'immutabilité (workflow terms-immutability).
+
+Comme tout fichier publié sous terms/, il ne doit jamais être modifié, supprimé ni renommé.
+Il sert de cible aux tests du workflow, pour ne pas toucher aux documents de CGU réels.
